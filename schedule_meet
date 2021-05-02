@@ -1,0 +1,23 @@
+#!/bin/bash
+
+PATH="$PATH:/home/wantguns/.local/bin"
+
+/home/wantguns/.local/bin/vdirsyncer sync
+
+classes=`/home/wantguns/.local/bin/khal list --format "{start-time} {end-time} {title} {description}" --notstarted 0000 2359 | tail -n +2`
+last_class_time=
+
+while IFS= read -a class; do
+    IFS=' ' read -r -a deets <<< "$class"
+    begin=${deets[0]}
+    end=${deets[1]}
+    subject=${deets[3]}
+    link=${deets[-1]} && echo $link
+    last_class_time=$end
+
+    at $begin today <<< "meet_handler -S -s $subject -l $link"
+    at $end today <<< "meet_handler -E -s $subject -l $link"
+done <<< $classes
+
+last_class_time=$(date +%H%M --date "$last_class_time + 10 min")
+at $last_class_time today <<< "automate_shutdown Im Tired of attending these classes" 

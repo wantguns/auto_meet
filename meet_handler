@@ -1,0 +1,46 @@
+#!/bin/bash
+
+while getopts ":SEl:s:h" o; do
+    case "${o}" in
+        S)
+            start=true
+            ;;
+        E)
+            start=false
+            ;;
+        l)
+            link=${OPTARG}
+            ;;
+        s)
+            subject=${OPTARG}
+            ;;
+        h)
+            echo "Schedule meetings automatically"
+            exit 0
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+log() {
+    logfile=/home/wantguns/.local/log/automate_zoom
+
+    notify-send "$@"
+    info="$date $@"
+
+    echo "$info" >> $logfile
+}
+
+if [ "$start" == true ]; then
+    sleep 10
+    env DISPLAY=:1 zenity --question --timeout 30 --text="<big>Do you want to attend $subject ? Ignoring this would mean yes</big>" --width=300
+    if [[ $? == 1 ]]; then
+        log "$subject class missed"
+    else
+        DISPLAY=:1 firefox -new-tab $link 
+        log "Attended $subject"
+    fi
+else
+    log "$subject class ended"
+    killall zoom
+fi
